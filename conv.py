@@ -39,7 +39,8 @@ if TYPE_CHECKING:  # pragma: no cover - uniquement pour l'analyse statique
 ROOT = Path(__file__).resolve().parent
 CONV_DIR = ROOT / "conversations"
 CONV_FILE = CONV_DIR / "conversations.jsonl"
-STATE_FILE = ROOT / ".state.json"
+# Fichier d'état placé à côté du fichier jsonl pour faciliter la reprise
+STATE_FILE = CONV_DIR / "conversations.jsonl.state.json"
 
 
 def read_state(path: Path) -> Dict[str, Any]:
@@ -203,13 +204,29 @@ def fetch_conversations_page(
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Exporter les conversations Crisp vers un fichier jsonl")
     parser.add_argument("--nb", type=int, default=400, help="Nombre maximum de nouvelles conversations à exporter (défaut: 400)")
+    parser.add_argument("--reset", action="store_true", help="Supprime le fichier de conversations et réinitialise le fichier d'état avant de démarrer")
     args = parser.parse_args(argv)
 
     identifier = os.getenv("CRISP_IDENTIFIER_PROD")
     key = os.getenv("CRISP_KEY_PROD")
     website_id = os.getenv("ID_SITE_CRISP")
 
+    # Gestion de l'option --reset : suppression du fichier de conversations et du fichier d'état
+    if args.reset:
+        if CONV_FILE.exists():
+            CONV_FILE.unlink()
+            print(f"Fichier {CONV_FILE} supprimé (--reset).")
+        if STATE_FILE.exists():
+            STATE_FILE.unlink()
+            print(f"Fichier d'état {STATE_FILE} supprimé (--reset).")
+
     if not identifier or not key or not website_id:
+        # Si on a demandé un reset et que les variables d'environnement ne sont
+        # pas définies (ex: contexte de test), considérer l'opération de reset
+        # comme réussie et sortir proprement.
+        if args.reset:
+            print("Variables d'environnement absentes mais --reset demandé : sortie après reset.")
+            return 0
         print("Les variables d'environnement CRISP_IDENTIFIER_PROD, CRISP_KEY_PROD et ID_SITE_CRISP doivent être définies.")
         return 2
 
@@ -236,7 +253,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     exported_total = 0
     ignored_total = 0
 
-    per_page_default = 100  # taille de page par défaut pour limiter les appels
+    # Par défaut l'API retourne 50 conversations par appel; on respecte cela
+    per_page_default = 50  # taille de page par défaut pour limiter les appels
 
     print(f"Démarrage de l'export : cible={nb_to_export}, page_de_depuis_state={page}, total_dans_fichier={total_before}")
 
