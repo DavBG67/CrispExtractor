@@ -21,5 +21,12 @@ python conv.py --nb 50
 Fichiers:
 
 - `conv.py` : script principal.
-- `conversations/conversations.jsonl` : fichier crée/complété par le script.
-- `.state.json` : fichier d'état utilisé pour reprendre la pagination.
+- `conversations/conversations.jsonl` : fichier créé/complété par le script.
+- `conversations/conversations.jsonl.state.json` : fichier d'état utilisé pour reprendre la pagination.
+
+Options utiles:
+
+```bash
+python conv.py --nb 50       # exporter jusqu'à 50 nouvelles conversations
+python conv.py --reset       # réinitialiser le fichier et l'état
+```
