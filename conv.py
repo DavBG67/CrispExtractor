@@ -25,9 +25,15 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, Set
 
-import requests
+try:  # pragma: no cover - import de dépendance externe
+    import requests  # type: ignore
+except ModuleNotFoundError:  # pragma: no cover - environnement sans dépendances
+    requests = None  # type: ignore
+
+if TYPE_CHECKING:  # pragma: no cover - uniquement pour l'analyse statique
+    import requests as _requests  # noqa: F401
 
 # --- Configuration des chemins ---
 ROOT = Path(__file__).resolve().parent
@@ -50,6 +56,51 @@ def write_state(path: Path, state: Dict[str, Any]) -> None:
     path.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def _extract_from_candidates(data: Dict[str, Any], keys: Iterable[str]) -> Optional[str]:
+    for key in keys:
+        value = data.get(key)
+        if value:
+            return str(value)
+    return None
+
+
+def extract_conversation_id(conv: Dict[str, Any]) -> Optional[str]:
+    """Essaie d'extraire l'identifiant unique d'une conversation.
+
+    L'API Crisp peut retourner plusieurs structures différentes. Cette fonction
+    centralise la logique afin de couvrir les cas les plus fréquents :
+    - `id`, `_id`, `conversation_id` ou `session_id` au premier niveau
+    - Objet imbriqué `session` contenant un `id`/`session_id`
+    - Objet `conversation` ou `meta` contenant un identifiant
+    """
+
+    # Clés directes au niveau racine
+    direct = _extract_from_candidates(conv, ("id", "_id", "conversation_id", "session_id"))
+    if direct:
+        return direct
+
+    # Structures imbriquées courantes
+    nested_candidates = (
+        conv.get("session"),
+        conv.get("conversation"),
+        conv.get("meta"),
+    )
+    for nested in nested_candidates:
+        if isinstance(nested, dict):
+            nested_id = _extract_from_candidates(nested, ("id", "_id", "conversation_id", "session_id"))
+            if nested_id:
+                return nested_id
+
+    # Certains payloads peuvent exposer un objet "data" qui contient la session
+    data = conv.get("data")
+    if isinstance(data, dict) and data is not conv:
+        nested_id = extract_conversation_id(data)
+        if nested_id:
+            return nested_id
+
+    return None
+
+
 def load_existing_ids(path: Path) -> Set[str]:
     """Charge les ids de conversation déjà présents dans le fichier jsonl.
 
@@ -65,12 +116,12 @@ def load_existing_ids(path: Path) -> Set[str]:
                 continue
             try:
                 obj = json.loads(line)
-                cid = obj.get("id") or obj.get("_id") or obj.get("conversation_id")
-                if cid:
-                    ids.add(str(cid))
             except Exception:
                 # Ignorer les lignes invalides
                 continue
+            cid = extract_conversation_id(obj)
+            if cid:
+                ids.add(cid)
     return ids
 
 
@@ -119,7 +170,7 @@ def sort_conversations_file(path: Path) -> None:
 
 
 def fetch_conversations_page(
-    session: requests.Session,
+    session: "requests.Session",
     website_id: str,
     page: int,
     per_page: int,
@@ -162,6 +213,13 @@ def main(argv: Optional[List[str]] = None) -> int:
         print("Les variables d'environnement CRISP_IDENTIFIER_PROD, CRISP_KEY_PROD et ID_SITE_CRISP doivent être définies.")
         return 2
 
+    if requests is None:
+        print(
+            "Le module 'requests' est requis pour exécuter ce script."
+            " Veuillez installer les dépendances (pip install -r requirements.txt)."
+        )
+        return 2
+
     nb_to_export = max(0, args.nb)
 
     state = read_state(STATE_FILE)
@@ -187,7 +245,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         per_page = min(per_page_default, nb_to_export - exported_total)
         try:
             convs = fetch_conversations_page(session, website_id, page, per_page, auth, headers)
-        except requests.HTTPError as e:
+        except requests.HTTPError as e:  # type: ignore[attr-defined]
             print(f"Erreur HTTP lors de l'appel API (page={page}): {e}")
             break
         except Exception as e:
@@ -203,12 +261,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         to_append: List[Dict[str, Any]] = []
 
         for conv in convs:
-            cid = conv.get("id") or conv.get("_id") or conv.get("conversation_id")
+            cid = extract_conversation_id(conv)
             if not cid:
                 # Si pas d'id, on l'ignore
                 ignored_this_round += 1
                 continue
-            cid = str(cid)
             if cid in existing_ids:
                 ignored_this_round += 1
                 continue
