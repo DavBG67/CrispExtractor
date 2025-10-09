@@ -30,3 +30,22 @@ Options utiles:
 python conv.py --nb 50       # exporter jusqu'à 50 nouvelles conversations
 python conv.py --reset       # réinitialiser le fichier et l'état
 ```
+
+Export des messages par conversation
+-----------------------------------
+
+Le script `mess.py` permet d'exporter les messages pour chaque conversation listée dans `conversations/conversations.jsonl`.
+
+Exemple d'utilisation:
+
+```bash
+export CRISP_IDENTIFIER_PROD=... \
+	CRISP_KEY_PROD=... \
+	ID_SITE_CRISP=...
+python mess.py --nb 50
+```
+
+Options:
+- `--nb N` : nombre maximum de conversations à traiter (défaut 50)
+- `--reset` : réinitialise le fichier d'état `conversations/messages/messages.jsonl.state.json`
+
