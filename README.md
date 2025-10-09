@@ -49,3 +49,31 @@ Options:
 - `--nb N` : nombre maximum de conversations à traiter (défaut 50)
 - `--reset` : réinitialise le fichier d'état `conversations/messages/messages.jsonl.state.json`
 
+
+Export des utilisateurs
+-----------------------
+
+Le script `users.py` permet de constituer le fichier `utilisateurs/utilisateurs.jsonl` en
+parcourant `conversations/conversations.jsonl`, en extrayant les emails et en appelant
+l'API Crisp `people/profile` pour récupérer les informations complètes de chaque utilisateur.
+
+Variables d'environnement requises:
+
+- `CRISP_IDENTIFIER_PROD`
+- `CRISP_KEY_PROD`
+- `ID_SITE_CRISP`
+
+Exemple:
+
+```bash
+export CRISP_IDENTIFIER_PROD=... \
+	CRISP_KEY_PROD=... \
+	ID_SITE_CRISP=...
+python users.py --nb 100
+```
+
+Options:
+
+- `--nb N` : nombre maximum d'utilisateurs à exporter (défaut 50)
+- `--reset` : supprime `utilisateurs/utilisateurs.jsonl` avant l'export
+
