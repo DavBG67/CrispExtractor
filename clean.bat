@@ -1,3 +1,3 @@
-rm -rf conv.py tests/ conversations/ 
+rm -rf README.md conv.py mess.py users.py tests/ conversations/ utilisateurs/
 git add . 
-git commit -m "Nettoyage avant regen"
+git commit -m "Clean général pour régen général !"
