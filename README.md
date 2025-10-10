@@ -23,6 +23,24 @@ Fichiers produits:
 - /conversations/conversations.jsonl : fichier JSONL contenant les conversations exportées
 - /conversations/conversations.jsonl.state.json : fichier d'état pour la pagination
 
+Export des messages par conversation
+----------------------------------
+
+Le script `mess.py` permet d'exporter les messages pour chaque conversation listée
+dans `/conversations/conversations.jsonl`. Il produit un fichier par conversation:
+
+- `/conversations/messages/{session_id}.jsonl`
+
+Usage minimal:
+
+    python3 mess.py --nb 50
+
+Options:
+- `--nb N` : nombre max de conversations à traiter (défaut 50)
+- `--reset` : réinitialiser le fichier d'état `/conversations/messages/messages.jsonl.state.json`
+
+Le script utilise les variables d'environnement listées ci-dessus pour l'authentification.
+
 Tests
 -----
 
