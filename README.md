@@ -15,6 +15,22 @@ Exemple d'exécution:
 
     python3 conv.py --nb 200
 
+Exporter les utilisateurs (profiles)
+----------------------------------
+
+Le script `users.py` parcourt le fichier `/conversations/conversations.jsonl`, extrait
+les adresses email (data>meta>email) et appelle l'API Crisp pour récupérer les profils
+assocíés. Les profils sont sauvegardés dans `/utilisateurs/utilisateurs.jsonl`.
+
+Usage:
+
+    python3 users.py --nb 100
+
+Options:
+- `--nb N` : nombre maximum d'utilisateurs à exporter (défaut 50)
+- `--reset` : supprimer `/utilisateurs/utilisateurs.jsonl` avant d'exécuter
+
+
 Options:
 - --nb N : nombre maximal de nouvelles conversations à exporter (défaut 400)
 - --reset : supprimer le fichier de conversations et l'état avant de démarrer
