@@ -57,6 +57,32 @@ Options:
 
 Le script utilise les variables d'environnement listées ci-dessus pour l'authentification.
 
+Détails pour `mess.py`
+----------------------
+
+Variables d'environnement requises:
+
+- `CRISP_IDENTIFIER_PROD` : identifiant API (login)
+- `CRISP_KEY_PROD` : clé API (password)
+- `ID_SITE_CRISP` : identifiant du site (website_id)
+
+Comportement important:
+
+- Les fichiers de conversations doivent être présents dans `/conversations/conversations.jsonl`.
+- Pour chaque conversation, `mess.py` crée/met à jour `/conversations/messages/{session_id}.jsonl`.
+- Le script conserve un fichier d'état `/conversations/messages/messages.jsonl.state.json` pour
+    reprendre le traitement (option `--reset` pour repartir de zéro).
+- Les appels API utilisent les headers `Content-Type: application/json` et `X-Crisp-Tier: plugin`.
+- Le script accepte `--nb N` pour limiter le nombre de conversations traitées (défaut 50).
+
+Exemple:
+
+        # traiter 200 conversations et repartir de l'index sauvegardé
+        python3 mess.py --nb 200
+
+        # réinitialiser l'état et traiter les 100 premières conversations
+        python3 mess.py --nb 100 --reset
+
 Tests
 -----
 
